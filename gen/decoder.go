@@ -290,7 +290,7 @@ func (g *Generator) genStructFieldDecoder(t reflect.Type, f reflect.StructField)
 	jsonName := g.fieldNamer.GetJSONFieldName(t, f)
 	tags := parseFieldTags(f)
 
-	if tags.omit {
+	if tags.omit || tags.omitDec {
 		return nil
 	}
 

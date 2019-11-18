@@ -61,8 +61,6 @@ func NewGenerator(filename string) *Generator {
 		imports: map[string]string{
 			pkgWriter:       "jwriter",
 			pkgLexer:        "jlexer",
-			pkgEasyJSON:     "easyjson",
-			"encoding/json": "json",
 		},
 		fieldNamer:    DefaultFieldNamer{},
 		marshalers:    make(map[reflect.Type]bool),
@@ -172,13 +170,6 @@ func (g *Generator) printHeader() {
 
 	fmt.Println(")")
 	fmt.Println("")
-	fmt.Println("// suppress unused package warning")
-	fmt.Println("var (")
-	fmt.Println("   _ *json.RawMessage")
-	fmt.Println("   _ *jlexer.Lexer")
-	fmt.Println("   _ *jwriter.Writer")
-	fmt.Println("   _ easyjson.Marshaler")
-	fmt.Println(")")
 
 	fmt.Println()
 }

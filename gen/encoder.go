@@ -58,6 +58,8 @@ type fieldTags struct {
 	noOmitEmpty bool
 	asString    bool
 	required    bool
+	omitDec      bool
+	omitEnc     bool
 }
 
 // parseFieldTags parses the json field tag into a structure.
@@ -78,6 +80,10 @@ func parseFieldTags(f reflect.StructField) fieldTags {
 			ret.asString = true
 		case s == "required":
 			ret.required = true
+		case s == "omit-dec":
+			ret.omitDec = true
+		case s == "omit-enc":
+			ret.omitEnc = true
 		}
 	}
 
@@ -296,7 +302,7 @@ func (g *Generator) genStructFieldEncoder(t reflect.Type, f reflect.StructField,
 	jsonName := g.fieldNamer.GetJSONFieldName(t, f)
 	tags := parseFieldTags(f)
 
-	if tags.omit {
+	if tags.omit || tags.omitEnc {
 		return firstCondition, nil
 	}
 
@@ -373,6 +379,9 @@ func (g *Generator) genStructEncoder(t reflect.Type) error {
 
 	fname := g.getEncoderName(t)
 	typ := g.getType(t)
+	if t.Kind() == reflect.Struct && t.Size() > 16 {
+		typ = "*" + typ
+	}
 
 	fmt.Fprintln(g.out, "func "+fname+"(out *jwriter.Writer, in "+typ+") {")
 	fmt.Fprintln(g.out, "  out.RawByte('{')")
@@ -400,14 +409,19 @@ func (g *Generator) genStructEncoder(t reflect.Type) error {
 }
 
 func (g *Generator) genStructMarshaler(t reflect.Type) error {
+	typ := g.getType(t)
 	switch t.Kind() {
-	case reflect.Slice, reflect.Array, reflect.Map, reflect.Struct:
+	case reflect.Slice, reflect.Array, reflect.Map:
+		// nothing
+	case reflect.Struct:
+		if t.Size() > 16 {
+			typ = "*" + typ
+		}
 	default:
 		return fmt.Errorf("cannot generate encoder/decoder for %v, not a struct/slice/array/map type", t)
 	}
 
 	fname := g.getEncoderName(t)
-	typ := g.getType(t)
 
 	if !g.noStdMarshalers {
 		fmt.Fprintln(g.out, "// MarshalJSON supports json.Marshaler interface")
